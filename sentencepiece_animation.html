@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SentencePiece Tokenization Animation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .container {
+            background: #1a1a1a;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(255,255,255,0.1);
+            padding: 40px;
+            max-width: 1000px;
+            width: 100%;
+            border: 1px solid #333;
+        }
+
+        h1 {
+            color: #a855f7;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #9ca3af;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+
+        .step-header {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .corpus-display {
+            background: #2d2d2d;
+            border: 2px solid #404040;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 1.3em;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            min-height: 80px;
+        }
+
+        .token {
+            background: #374151;
+            border: 2px solid #a855f7;
+            border-radius: 8px;
+            padding: 8px 12px;
+            display: inline-block;
+            transition: all 0.3s ease;
+            color: #e5e7eb;
+        }
+
+        .token.highlight {
+            background: #c084fc;
+            border-color: #a855f7;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.4);
+            color: #000;
+        }
+
+        .token.space {
+            background: #4a1d5a;
+            border-color: #d8b4fe;
+            color: #f3e8ff;
+            font-weight: bold;
+        }
+
+        .token.merging {
+            animation: merge 0.6s ease;
+        }
+
+        @keyframes merge {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2) rotate(5deg); background: #4caf50; }
+            100% { transform: scale(1); }
+        }
+
+        .vocab-section {
+            background: #2d2d2d;
+            border: 2px solid #a855f7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .vocab-title {
+            font-weight: bold;
+            color: #c084fc;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        .vocab-subsection {
+            margin-bottom: 15px;
+        }
+
+        .vocab-subsection-title {
+            font-size: 0.9em;
+            color: #9ca3af;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .vocab-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .vocab-item {
+            background: #374151;
+            border: 2px solid #a855f7;
+            border-radius: 6px;
+            padding: 6px 12px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            color: #e5e7eb;
+        }
+
+        .vocab-item.base {
+            background: #1e3a5f;
+            border-color: #60a5fa;
+            color: #93c5fd;
+        }
+
+        .vocab-item.learned {
+            background: #3d1a4a;
+            border-color: #c084fc;
+            color: #e9d5ff;
+        }
+
+        .vocab-item.space {
+            background: #4a1d5a;
+            border-color: #d8b4fe;
+            color: #f3e8ff;
+        }
+
+        .vocab-item.new {
+            animation: appear 0.5s ease;
+            background: #7c3aed;
+            color: white;
+            border-color: #a855f7;
+        }
+
+        @keyframes appear {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .merge-info {
+            background: #2d1a3d;
+            border-left: 4px solid #a855f7;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            color: #e9d5ff;
+        }
+
+        .merge-info strong {
+            color: #c084fc;
+        }
+
+        .explanation {
+            background: #2d1b3d;
+            border-left: 4px solid #a855f7;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            line-height: 1.6;
+            color: #e9d5ff;
+        }
+
+        .pair-freq {
+            background: #2d2d2d;
+            border: 2px solid #4b5563;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .pair-freq-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #d1d5db;
+        }
+
+        .freq-item {
+            display: inline-block;
+            margin: 5px;
+            padding: 8px 12px;
+            background: #374151;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            color: #e5e7eb;
+        }
+
+        .freq-item.top {
+            background: #c084fc;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .difference-box {
+            background: linear-gradient(135deg, #581c87 0%, #6b21a8 100%);
+            border: 2px solid #a855f7;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            color: #e9d5ff;
+        }
+
+        .difference-box h3 {
+            color: #d8b4fe;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .difference-box ul {
+            margin-left: 20px;
+            line-height: 1.8;
+        }
+
+        .difference-box strong {
+            color: #f3e8ff;
+        }
+
+        .space-indicator {
+            background: rgba(168, 85, 247, 0.2);
+            border: 2px dashed #a855f7;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+            color: #d8b4fe;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔷 SentencePiece Tokenization</h1>
+        <p class="subtitle">Language-Agnostic Subword Tokenization</p>
+
+        <div class="explanation">
+            <strong>How SentencePiece Works:</strong> Unlike BPE and WordPiece, SentencePiece treats the input text as a raw character sequence INCLUDING SPACES (represented as ▁). No pre-tokenization needed!
+        </div>
+
+        <div class="difference-box">
+            <h3>🔄 Key Differences from BPE & WordPiece:</h3>
+            <ul>
+                <li><strong>Space Treatment:</strong> Spaces are treated as regular characters (▁ symbol). No word boundaries needed!</li>
+                <li><strong>No Pre-tokenization:</strong> Works directly on raw text without splitting words first</li>
+                <li><strong>Language Agnostic:</strong> Perfect for languages without clear word boundaries (Chinese, Japanese, etc.)</li>
+                <li><strong>Reversible:</strong> Can always reconstruct original text perfectly including spaces</li>
+                <li><strong>Two Algorithms:</strong> Can use BPE or Unigram LM internally (we'll show BPE variant here)</li>
+                <li><strong>Usage:</strong> Used by T5, ALBERT, XLNet, and many multilingual models</li>
+            </ul>
+        </div>
+
+        <div class="space-indicator">
+            <strong>💡 Space Notation:</strong> In SentencePiece, spaces are encoded as <strong>▁</strong> (U+2581 "Lower One Eighth Block"). 
+            For example: "hello world" → "▁hello▁world"
+        </div>
+
+        <div id="stepsContainer"></div>
+
+        <div style="margin-top: 50px; padding: 30px; background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); border-radius: 15px; color: white; border: 2px solid #a855f7;">
+            <h2 style="margin-bottom: 20px; font-size: 2em;">🎯 FINAL RESULT: What Tokens Did We Produce?</h2>
+            <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 10px; margin-bottom: 15px;">
+                <div style="font-size: 1.3em; margin-bottom: 10px;"><strong>Original Text → Final Tokens:</strong></div>
+                <div style="font-size: 1.5em; font-family: 'Courier New', monospace; line-height: 2;">
+                    <div>📌 <strong>"hello"</strong> → [<span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">▁he</span>, <span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">ll</span>, <span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">o</span>]</div>
+                    <div>📌 <strong>"hell"</strong> → [<span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">▁he</span>, <span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">ll</span>]</div>
+                    <div>📌 <strong>"held"</strong> → [<span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">▁he</span>, <span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">l</span>, <span style="background: rgba(255,255,255,0.3); padding: 5px 10px; border-radius: 5px;">d</span>]</div>
+                </div>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 20px; border-radius: 10px;">
+                <div style="font-size: 1.3em; margin-bottom: 10px;"><strong>Learned Vocabulary (9 tokens):</strong></div>
+                <div style="font-size: 1.2em; font-family: 'Courier New', monospace;">
+                    Original 6: "▁", "h", "e", "l", "o", "d"<br>
+                    <strong style="color: #fde047;">+ Learned 3: "▁h", "▁he", "ll"</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const steps = [
+            {
+                step: "START",
+                title: "🔵 WHAT HAPPENS FIRST: Raw Text with Space Markers",
+                corpus: [
+                    ['▁', 'h', 'e', 'l', 'l', 'o'],
+                    ['▁', 'h', 'e', 'l', 'l'],
+                    ['▁', 'h', 'e', 'l', 'd']
+                ],
+                vocab: ['▁', 'h', 'e', 'l', 'o', 'd'],
+                explanation: "SentencePiece treats text as raw characters. Spaces become ▁ (space marker). We have 'hello', 'hell', 'held' - note the ▁ prefix indicating word start!",
+                pairs: { '▁+h': 3, 'h+e': 3, 'e+l': 3, 'l+l': 2, 'l+o': 1, 'l+d': 1 },
+                highlightPairs: [],
+                action: "✅ Initial vocabulary: 6 unique characters including ▁ (space marker). Notice: NO word boundaries, just raw character sequence!"
+            },
+            {
+                step: "THEN",
+                title: "🟢 WHAT HAPPENS NEXT: First Merge - Most Frequent Pair",
+                corpus: [
+                    ['▁h', 'e', 'l', 'l', 'o'],
+                    ['▁h', 'e', 'l', 'l'],
+                    ['▁h', 'e', 'l', 'd']
+                ],
+                vocab: ['▁', 'h', 'e', 'l', 'o', 'd', '▁h'],
+                newVocab: ['▁h'],
+                explanation: "Count all adjacent pairs across entire corpus. '▁+h' appears 3 times (tied for most frequent!). Merge '▁' and 'h' into '▁h'.",
+                pairs: { '▁h+e': 3, 'h+e': 0, 'e+l': 3, 'l+l': 2, 'l+o': 1, 'l+d': 1 },
+                highlightPairs: [['▁', 'h']],
+                action: "✅ Add '▁h' to vocabulary. This token captures 'word-initial h'. Replace all '▁ h' with '▁h' in corpus."
+            },
+            {
+                step: "THEN",
+                title: "🟢 WHAT HAPPENS NEXT: Second Merge",
+                corpus: [
+                    ['▁he', 'l', 'l', 'o'],
+                    ['▁he', 'l', 'l'],
+                    ['▁he', 'l', 'd']
+                ],
+                vocab: ['▁', 'h', 'e', 'l', 'o', 'd', '▁h', '▁he'],
+                newVocab: ['▁he'],
+                explanation: "Recount pairs. '▁h+e' appears 3 times (tied with 'e+l'). Merge '▁h' and 'e' into '▁he'.",
+                pairs: { '▁he+l': 3, 'e+l': 0, 'l+l': 2, 'l+o': 1, 'l+d': 1 },
+                highlightPairs: [['▁h', 'e']],
+                action: "✅ Add '▁he' to vocabulary. Now we have a common word-initial bigram! Replace all '▁h e' with '▁he'."
+            },
+            {
+                step: "THEN",
+                title: "🟢 WHAT HAPPENS NEXT: Third Merge - Common Pattern",
+                corpus: [
+                    ['▁he', 'll', 'o'],
+                    ['▁he', 'll'],
+                    ['▁he', 'l', 'd']
+                ],
+                vocab: ['▁', 'h', 'e', 'l', 'o', 'd', '▁h', '▁he', 'll'],
+                newVocab: ['ll'],
+                explanation: "Recount pairs. 'l+l' appears 2 times (most frequent remaining). Merge 'l' and 'l' into 'll'.",
+                pairs: { '▁he+ll': 2, '▁he+l': 1, 'll+o': 1, 'l+d': 1 },
+                highlightPairs: [['l', 'l']],
+                action: "✅ Add 'll' to vocabulary. This captures the double-l pattern common in these words."
+            },
+            {
+                step: "FINALLY",
+                title: "🔴 WHAT HAPPENS FINALLY: Training Complete",
+                corpus: [
+                    ['▁he', 'll', 'o'],
+                    ['▁he', 'll'],
+                    ['▁he', 'l', 'd']
+                ],
+                vocab: ['▁', 'h', 'e', 'l', 'o', 'd', '▁h', '▁he', 'll'],
+                explanation: "Training complete! Notice how SentencePiece learned: (1) Word-initial patterns with ▁ marker, (2) Common subword patterns like 'll'. The space information is preserved in tokens!",
+                pairs: {},
+                highlightPairs: [],
+                action: "✅ Final vocabulary: 9 tokens. We learned 3 merged tokens. Key insight: ▁ allows us to distinguish 'he' at word start vs middle!"
+            }
+        ];
+
+        function createCorpusHTML(corpus, highlightPairs) {
+            let html = '';
+            
+            corpus.forEach((word, wordIdx) => {
+                if (wordIdx > 0) {
+                    html += '<span style="color: #666; margin: 0 10px;">•</span>';
+                }
+                
+                word.forEach((token, tokenIdx) => {
+                    let className = 'token';
+                    
+                    // Mark space tokens
+                    if (token.includes('▁')) {
+                        className += ' space';
+                    }
+                    
+                    // Check if this token and next should be highlighted
+                    if (tokenIdx < word.length - 1) {
+                        for (let pair of highlightPairs) {
+                            if (token === pair[0] && word[tokenIdx + 1] === pair[1]) {
+                                className += ' highlight';
+                            }
+                        }
+                    }
+                    
+                    html += `<span class="${className}">${token}</span>`;
+                });
+            });
+            
+            return html;
+        }
+
+        function createVocabHTML(vocab, newVocab, step) {
+            const baseTokens = ['▁', 'h', 'e', 'l', 'o', 'd'];
+            const learnedTokens = vocab.filter(item => !baseTokens.includes(item));
+            
+            let html = '<div class="vocab-subsection">';
+            html += '<div class="vocab-subsection-title">Base Tokens (characters + space marker):</div>';
+            html += '<div class="vocab-list">';
+            
+            baseTokens.forEach(item => {
+                let className = 'vocab-item base';
+                if (item === '▁') {
+                    className += ' space';
+                }
+                html += `<span class="${className}">"${item}"</span>`;
+            });
+            
+            html += '</div></div>';
+            
+            if (learnedTokens.length > 0) {
+                html += '<div class="vocab-subsection">';
+                html += '<div class="vocab-subsection-title">Learned Tokens (merges):</div>';
+                html += '<div class="vocab-list">';
+                
+                learnedTokens.forEach(item => {
+                    let className = 'vocab-item learned';
+                    if (item.includes('▁')) {
+                        className += ' space';
+                    }
+                    if (newVocab && newVocab.includes(item)) {
+                        className = 'vocab-item new';
+                        if (item.includes('▁')) {
+                            className += ' space';
+                        }
+                    }
+                    html += `<span class="${className}">"${item}"</span>`;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            return html;
+        }
+
+        function createPairFreqHTML(pairs) {
+            if (Object.keys(pairs).length === 0) return '';
+            
+            const sortedPairs = Object.entries(pairs).sort((a, b) => b[1] - a[1]);
+            let html = '<div class="pair-freq"><div class="pair-freq-title">📊 Pair Frequencies:</div><div>';
+            
+            sortedPairs.forEach(([pair, freq], idx) => {
+                const className = idx === 0 ? 'freq-item top' : 'freq-item';
+                html += `<span class="${className}">${pair}: ${freq}</span>`;
+            });
+            
+            html += '</div></div>';
+            return html;
+        }
+
+        function renderAllSteps() {
+            const container = document.getElementById('stepsContainer');
+            
+            steps.forEach((step, index) => {
+                const stepDiv = document.createElement('div');
+                stepDiv.style.marginBottom = '40px';
+                
+                let html = `
+                    <div class="step-header">${step.title}</div>
+                    <div class="merge-info">
+                        <strong>${step.step}:</strong> ${step.explanation}
+                    </div>
+                    <div style="background: #2d1a3d; border-left: 4px solid #a855f7; padding: 15px; margin-bottom: 20px; border-radius: 5px; color: #e9d5ff;">
+                        <strong style="color: #c084fc;">Action taken:</strong> ${step.action}
+                    </div>
+                    ${createPairFreqHTML(step.pairs)}
+                    <div class="corpus-display">
+                        ${createCorpusHTML(step.corpus, step.highlightPairs || [])}
+                    </div>
+                    <div class="vocab-section">
+                        <div class="vocab-title">📚 Vocabulary (${step.vocab.length} tokens total):</div>
+                        ${createVocabHTML(step.vocab, step.newVocab, step.step)}
+                    </div>
+                `;
+                
+                // Add arrow between steps
+                if (index < steps.length - 1) {
+                    html += `
+                        <div style="text-align: center; margin: 30px 0; font-size: 3em; color: #a855f7;">
+                            ⬇️
+                        </div>
+                    `;
+                }
+                
+                stepDiv.innerHTML = html;
+                container.appendChild(stepDiv);
+            });
+        }
+
+        // Render all steps on page load
+        renderAllSteps();
+    </script>
+</body>
+</html>
